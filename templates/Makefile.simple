@@ -1,0 +1,25 @@
+CC = gcc
+CFLAGS = -Wall -Werror -Wextra -std=c11
+
+# Имя исполняемого файла и исходники
+APP = app
+SRC = main.c
+OBJ = $(SRC:.c=.o)
+
+all: $(APP)
+
+$(APP): $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $(APP)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: all clean fclean rebuild
+
+clean:
+	rm -f $(OBJ)
+
+fclean: clean
+	rm -f $(APP)
+
+rebuild: fclean all

@@ -1,0 +1,70 @@
+CC = gcc
+CFLAGS = -Wall -Werror -Wextra -std=c11 $(shell pkg-config --cflags check)
+LDFLAGS = $(shell pkg-config --libs check)
+
+# Настройки проекта (замени NAME)
+PROJECT_NAME = NAME
+LIB = $(PROJECT_NAME).a
+SRC = $(PROJECT_NAME).c
+OBJ = $(SRC:.c=.o)
+
+MAIN_SRC = main.c
+MAIN_APP = app
+
+TEST_DIR = test
+TEST_SRC = $(TEST_DIR)/test.c
+TEST_APP = test_exec
+
+# Флаги для gcov
+CFLAGS_GCOV = $(CFLAGS) --coverage
+LDFLAGS_GCOV = --coverage
+
+MAKE = make
+
+all: $(LIB)
+
+# 1. Сборка библиотеки
+$(LIB): $(OBJ)
+	ar rcs $(LIB) $(OBJ)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# 2. Сборка основного приложения
+main: $(LIB) $(MAIN_SRC)
+	$(CC) $(CFLAGS) $(MAIN_SRC) $(LIB) -o $(MAIN_APP)
+
+# 3. Сборка и запуск тестов
+test: $(LIB) $(TEST_SRC)
+	$(CC) $(CFLAGS) -I. $(TEST_SRC) $(LIB) $(LDFLAGS) -o $(TEST_APP)
+	./$(TEST_APP)
+
+# 4. Проверка на утечки памяти (macOS / Linux)
+valgrind: test
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(TEST_APP)
+
+# 5. Отчет о покрытии кода (gcov + lcov)
+gcov_report: fclean
+	$(CC) $(CFLAGS_GCOV) $(SRC) $(TEST_SRC) $(LDFLAGS) $(LDFLAGS_GCOV) -o test_gcov
+	./test_gcov
+	lcov -c -d . -o coverage.info --ignore-errors mismatch --no-external
+	genhtml coverage.info -o report
+	open report/index.html
+
+# 6. Форматирование кода
+format:
+	find . -name "*.c" -o -name "*.h" | xargs clang-format -i
+
+# 7. Очистка
+clean:
+	rm -f *.o $(LIB) $(MAIN_APP) $(TEST_APP) test_gcov
+	rm -rf report coverage.info
+
+fclean: clean
+	rm -f *.gcda *.gcno
+	find . -name "*.gcda" -delete 2>/dev/null || true
+	find . -name "*.gcno" -delete 2>/dev/null || true
+
+rebuild: fclean all
+
+.PHONY: all main test valgrind gcov_report format clean fclean rebuild

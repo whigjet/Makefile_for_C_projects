@@ -1,0 +1,26 @@
+CC = gcc
+CFLAGS = -Wall -Werror -Wextra -std=c11
+
+# Настройки библиотеки (замени NAME на имя твоего проекта)
+PROJECT_NAME = NAME
+LIB = $(PROJECT_NAME).a
+SRC = $(PROJECT_NAME).c
+OBJ = $(SRC:.c=.o)
+
+all: $(LIB)
+
+$(LIB): $(OBJ)
+	ar rcs $(LIB) $(OBJ)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: all clean fclean rebuild
+
+clean:
+	rm -f $(OBJ)
+
+fclean: clean
+	rm -f $(LIB)
+
+rebuild: fclean all
